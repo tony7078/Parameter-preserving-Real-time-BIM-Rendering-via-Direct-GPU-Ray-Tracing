@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+     <meta charset="utf-8">
+    <meta name="description"
+        content="Parameter-preserving Real-time BIM Rendering via Direct GPU Ray Tracing.">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Parameter-preserving Real-time BIM Rendering</title>
+
+    <link href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans|Castoro" rel="stylesheet">
+
+    <link rel="stylesheet" href="./static/css/bulma.min.css">
+    <link rel="stylesheet" href="./static/css/fontawesome.all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css">
+    <link rel="stylesheet" href="./static/css/index.css">
+
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script defer src="./static/js/fontawesome.all.min.js"></script>
+
+    <style>
+        .publication-links .button {
+            text-transform: none;
+        }
+
+        .comparison-title {
+            text-align: center;
+            margin-bottom: 2rem;
+            color: #333;
+        }
+
+        .baseline-nav {
+            display: flex;
+            justify-content: center;
+            gap: 0.3rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .baseline-nav button {
+            padding: 0.6rem 1.2rem;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .baseline-nav button:hover {
+            background: #f0f0f0;
+            border-color: #999;
+        }
+
+        .baseline-nav button.active {
+            color: white;
+            background: #007bff;
+            border-color: #007bff;
+        }
+
+        .baseline-item {
+            display: none;
+            height: auto;
+            text-align: center;
+        }
+
+        .baseline-item.active {
+            display: block;
+        }
+
+        .baseline-item video {
+            width: 100%;
+            height: auto;
+            object-fit: contain;
+            border-radius: 8px;
+            margin: 0;
+            padding: 0;
+        }
+
+        @media screen and (max-width: 768px) {
+            .baseline-nav {
+                gap: 0.25rem;
+            }
+
+            .baseline-nav button {
+                padding: 0.4rem 0.8rem;
+                font-size: 0.8rem;
+            }
+        }
+
+        .simulation-title {
+            text-align: center;
+            margin-bottom: 0.5rem;
+            color: #333;
+        }
+
+        .comparison-panel {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+        }
+
+        .comparison-panel video {
+            width: 100%;
+            height: auto;
+            aspect-ratio: 1 / 1;
+            object-fit: contain;
+            border-radius: 8px;
+            margin: 0;
+            padding: 0;
+        }
+
+        .comparison-panel h4 {
+            margin-bottom: 0.5rem;
+            color: #2c3e50;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        /* Video Comparison Slider */
+        .video-compare-container {
+            position: relative;
+            overflow: hidden;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            cursor: ew-resize;
+            user-select: none;
+            -webkit-user-select: none;
+            line-height: 0;
+        }
+
+        .video-compare-container .video-left {
+            width: 100%;
+            display: block;
+        }
+
+        .video-compare-container .video-right {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            clip-path: inset(0 0 0 50%);
+        }
+
+        .video-compare-slider {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            width: 4px;
+            height: 100%;
+            background: #AAAAAA;
+            transform: translateX(-50%);
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .video-compare-handle {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.85);
+            border: 2px solid #AAAAAA;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            color: #555;
+            letter-spacing: 2px;
+            pointer-events: none;
+        }
+
+        .video-compare-label {
+            position: absolute;
+            top: 16px;
+            padding: 20px 24px;
+            background: rgba(0, 0, 0, 0.55);
+            font-size: 1.7rem;
+            font-weight: 600;
+            border-radius: 6px;
+            z-index: 10;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+        }
+
+        .video-compare-label.left {
+            left: 12px;
+            color: #ff4444;
+        }
+
+        .video-compare-label.right {
+            right: 12px;
+            color: #88dd44;
+        }
+
+        @media screen and (max-width: 768px) {
+            .video-compare-handle {
+                width: 32px;
+                height: 32px;
+                font-size: 13px;
+            }
+            .video-compare-label {
+                font-size: 1.2rem;
+                padding: 6px 16px;
+            }
+        }
+
+        /* Qualitative Visualization Gallery */
+        .qual-thumbnails {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 1rem;
+        }
+
+        .qual-thumb {
+            flex: 1;
+            min-width: 0;
+            cursor: pointer;
+            border-radius: 10px;
+            border: 4px solid transparent;
+            padding: 3px;
+            transition: transform 0.25s ease, border-color 0.25s ease;
+            transform: scale(1);
+        }
+
+        .qual-thumb.active {
+            border-color: #5bc0eb;
+            transform: scale(1.08);
+        }
+
+        .qual-thumb img {
+            width: 100%;
+            height: auto;
+            border-radius: 7px;
+            display: block;
+            object-fit: cover;
+            aspect-ratio: 16 / 9;
+        }
+    </style>
+</head>
+
+<body>
+    <section class="hero">
+        <div class="hero-body">
+            <div class="container is-max-desktop">
+                <div class="columns is-centered">
+                    <div class="column has-text-centered">
+                        <h1 class="title is-2 publication-title">
+                            Parameter-preserving Real-time BIM Rendering<br>via Direct GPU Ray Tracing
+                        </h1>
+                        <div class="is-size-5 publication-authors">
+                            <span class="author-block"><a href="https://tony7078.github.io">Donggyu Lee</a><sup>1*</sup></span>,
+                            <span class="author-block">Jaehyuk Lim<sup>1*</sup></span>,
+                            <span class="author-block">Junghyun Han<sup>1&dagger;</sup></span>,
+                            <span class="author-block">Seung-wook Kim<sup>2&dagger;</sup></span>
+                        </div>
+                        <div class="is-size-6 has-text-centered"
+                            style="margin-top: 0.3rem; margin-bottom: 0.25rem; opacity: 0.8;">
+                            <sup>*</sup>Equal contribution &nbsp;&nbsp; <sup>&dagger;</sup>Corresponding authors
+                        </div>
+                        <div class="is-size-5 publication-authors">
+                            <sup>1</sup>Korea University &nbsp;&nbsp; <sup>2</sup>Hankuk University of Foreign Studies
+                        </div>
+
+                        <div class="is-size-4 has-text-centered"
+                            style="margin-top: 1.2rem; margin-bottom: 0.2rem; color: #555; font-weight: 500;">
+                            CASAXR 2026 &middot; Computer Animation and Virtual Worlds (CAVW)
+                        </div>
+
+                        <div class="column has-text-centered">
+                            <div class="publication-links">
+                                <span class="link-block">
+                                    <a href="http://dx.doi.org/10.1002/cav.70159"
+                                        class="external-link button is-normal is-rounded is-dark">
+                                        <span class="icon">
+                                            <i class="fas fa-file-alt"></i>
+                                        </span>
+                                        <span>Paper</span>
+                                    </a>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="section" id="method" style="padding-top: 0rem;">
+    <div class="container is-max-desktop">
+        <div class="columns is-centered">
+            <div class="column is-five-sixths">
+                <div class="baseline-group">
+                    <div class="baseline-nav" style="margin-bottom: 1rem;">
+                        <button class="baseline-btn active" data-baseline="industrial">🏭 Industrial Park</button>
+                        <button class="baseline-btn" data-baseline="factory">🏗️ Factory</button>
+                        <button class="baseline-btn" data-baseline="machine">⚙️ Machine</button>
+                        <button class="baseline-btn" data-baseline="plant">🛢️ Industrial Plant</button>
+                    </div>
+                    <div class="content" style="margin-bottom: 2rem;">
+                        <div class="baseline-item active" id="industrial">
+                            <div class="video-compare-container">
+                                <video class="video-left" muted playsinline autoplay preload="metadata"
+                                    src="static/videos/industrial_revit.mp4"></video>
+                                <video class="video-right" muted playsinline autoplay preload="metadata"
+                                    src="static/videos/industrial_ours.mp4"></video>
+                                <div class="video-compare-slider"><div class="video-compare-handle">&#9664;&#9654;</div></div>
+                                <span class="video-compare-label left">Revit</span>
+                                <span class="video-compare-label right">Ours</span>
+                            </div>
+                        </div>
+
+                        <div class="baseline-item" id="factory">
+                            <div class="video-compare-container">
+                                <video class="video-left" muted playsinline autoplay preload="metadata"
+                                    src="static/videos/factory_revit.mp4"></video>
+                                <video class="video-right" muted playsinline autoplay preload="metadata"
+                                    src="static/videos/factory_ours.mp4"></video>
+                                <div class="video-compare-slider"><div class="video-compare-handle">&#9664;&#9654;</div></div>
+                                <span class="video-compare-label left">Revit</span>
+                                <span class="video-compare-label right">Ours</span>
+                            </div>
+                        </div>
+
+                        <div class="baseline-item" id="machine">
+                            <div class="video-compare-container">
+                                <video class="video-left" muted playsinline autoplay preload="metadata"
+                                    src="static/videos/machine_revit.mp4"></video>
+                                <video class="video-right" muted playsinline autoplay preload="metadata"
+                                    src="static/videos/machine_ours.mp4"></video>
+                                <div class="video-compare-slider"><div class="video-compare-handle">&#9664;&#9654;</div></div>
+                                <span class="video-compare-label left">Revit</span>
+                                <span class="video-compare-label right">Ours</span>
+                            </div>
+                        </div>
+
+                        <div class="baseline-item" id="plant">
+                            <div class="video-compare-container">
+                                <video class="video-left" muted playsinline autoplay preload="metadata"
+                                    src="static/videos/plant_revit.mp4"></video>
+                                <video class="video-right" muted playsinline autoplay preload="metadata"
+                                    src="static/videos/plant_ours.mp4"></video>
+                                <div class="video-compare-slider"><div class="video-compare-handle">&#9664;&#9654;</div></div>
+                                <span class="video-compare-label left">Revit</span>
+                                <span class="video-compare-label right">Ours</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    </section>
+
+    <section class="section" style="padding-top: 1.5rem;">
+        <div class="container is-max-desktop">
+            <div class="columns is-centered has-text-centered">
+                <div class="column is-three-fourths">
+                    <h2 class="title is-4">Abstract</h2>
+                    <div class="content has-text-justified">
+                        <p>
+                            Current BIM visualization systems tessellate parametric geometry into triangle meshes before rendering, which increases memory usage, introduces faceting on curved surfaces, and adds significant export-time overhead. 
+                        </p>
+                        <p>
+                            We present an end-to-end system that preserves parametric shape definitions from BIM models through to GPU ray tracing, bypassing mesh conversion for supported parametric shapes.
+                            Our exporter extracts parametric shapes from a BIM authoring tool and encodes them into a compact binary format with two-tier caching to avoid redundant extraction.
+                            Our renderer maps preserved BIM primitives to an instanced GPU scene layout and performs direct ray-primitive intersections, with mixed-precision parameter encoding and ray advancement improving memory efficiency and numerical robustness.
+                        </p>
+                        <p>
+                            Evaluation on architectural projects shows that our system achieves a lower GPU memory footprint, produces mathematically exact curved surfaces free of tessellation artifacts, and exports models faster than standard workflows.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="section" id="method" style="padding-top: 1.5rem;">
+        <div class="container is-max-desktop">
+            <div class="columns is-centered">
+                <div class="column is-five-sixths">
+                    <h2 class="title is-4 simulation-title">Overall Pipeline</h2>
+                    <div class="content" style="margin-bottom: 2rem;">
+                        <figure>
+                            <div style="display: inline-block; background-color: #fff; padding: 1rem; border-radius: 10px; 
+                  box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin: 0rem 0;">
+                                <img src="./static/images/overview.png" alt="Method overview"
+                                    style="display: block; width: 100%; height: auto; border-radius: 8px;" />
+                            </div>
+
+                            <figcaption class="is-size-6" style="margin-top: 0.5rem; color: #666;">
+                                Parametric shapes are preserved from BIM extraction to GPU rendering without mesh conversion. 
+                                The exporter classifies each BIM face by surface type, extracts mathematical parameters, applies two-tier caching, and writes a binary file. 
+                                The renderer constructs OptiX acceleration structures and uses per-shape-type custom intersection programs for direct ray-primitive intersection.
+                            </figcaption>
+                        </figure>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="section" id="method" style="padding-top: 1.5rem;">
+    <div class="container is-max-desktop">
+        <div class="columns is-centered">
+            <div class="column is-five-sixths">
+                <h2 class="title is-4 simulation-title">Ray Advancement</h2>
+                <div class="content" style="margin-bottom: 2rem;">
+                    <figure>
+                        <div style="display: flex; gap: 1rem; justify-content: center; background-color: #fff; padding: 1rem; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin: 0rem 0;">
+                            
+                            <div style="flex: 1; text-align: center; display: flex; flex-direction: column; align-items: center;">
+                                <img src="./static/images/wo_adv.png" alt="Without ray adv"
+                                    style="display: block; width: 100%; height: auto; border-radius: 8px;" />
+                                <div style="margin: 1.4rem 0 0 0;">
+                                    <strong class="is-size-5" style="color: #333;">a) without ray adv.</strong>
+                                </div>
+                            </div>
+
+                            <div style="flex: 1; text-align: center; display: flex; flex-direction: column; align-items: center;">
+                                <img src="./static/images/w_adv.png" alt="With ray adv"
+                                    style="display: block; width: 100%; height: auto; border-radius: 8px;" />
+                                <div style="margin: 1.4rem 0 0 0;">
+                                    <strong class="is-size-5" style="color: #333;">b) with ray adv.</strong>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <figcaption class="is-size-6" style="margin-top: 0.5rem; color: #666;">
+                            Without ray advancement, numerical instability in the quartic solver causes missed surface pixels. 
+                            Advancing the ray to the AABB entry point improves numerical conditioning and eliminates these artifacts. 
+                            It also improves performance: the average frame time decreases from 2.71 ms without advancement to 1.63 ms with advancement.
+                        </figcaption>
+                    </figure>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+    <section class="section" style="padding-top: 1.5rem;">
+        <div class="container is-max-desktop">
+            <div class="columns is-centered">
+                <div class="column is-five-sixths">
+                    <h2 class="title is-4 comparison-title">Qualitative Visualization</h2>
+
+                    <div class="content" style="margin-bottom: 2rem;">
+                        <!-- Main large image -->
+                        <figure>
+                            <img id="qual-main-img" src="static/images/1.png" alt="Qualitative Result"
+                                style="width: 100%; height: auto; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: opacity 0.3s ease;" />
+                        </figure>
+
+                        <!-- Thumbnail row -->
+                        <div class="qual-thumbnails">
+                            <div class="qual-thumb active" data-img="static/images/1.png">
+                                <img src="static/images/1.png" alt="Thumbnail 1" />
+                            </div>
+                            <div class="qual-thumb" data-img="static/images/2.png">
+                                <img src="static/images/2.png" alt="Thumbnail 2" />
+                            </div>
+                            <div class="qual-thumb" data-img="static/images/3.png">
+                                <img src="static/images/3.png" alt="Thumbnail 3" />
+                            </div>
+                            <div class="qual-thumb" data-img="static/images/4.png">
+                                <img src="static/images/4.png" alt="Thumbnail 4" />
+                            </div>
+                            <div class="qual-thumb" data-img="static/images/5.png">
+                                <img src="static/images/5.png" alt="Thumbnail 5" />
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </section>
+
+<section class="section" id="BibTeX" style="padding-top: 1.5rem;">
+  <div class="container is-max-desktop content">
+    <h2 class="title">BibTeX</h2>
+    <pre><code>@article{lee2026parameter,
+  author    = {Lee, Donggyu and Lim, Jaehyuk and Han, Junghyun and Kim, Seung-wook},
+  title     = {Parameter-preserving Real-time BIM Rendering via Direct GPU Ray Tracing},
+  journal   = {Computer Animation and Virtual Worlds},
+  volume    = {37},
+  number    = {4},
+  year      = {2026},
+  doi       = {10.1002/cav.70159},
+}</code></pre>
+  </div>
+</section>
+
+<footer class="footer">
+    <div class="columns is-centered">
+      <div class="column is-8">
+        <div class="content">
+          <p>
+            This webpage template is adapted from <a
+              href="https://github.com/nerfies/nerfies.github.io">Nerfies</a>, under a <a rel="license"
+                                                href="http://creativecommons.org/licenses/by-sa/4.0/"> CC BY-SA 4.0 License</a>.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</footer>
+
+    <script>
+    function enforceAutoplayLoop(video) {
+        if (video.paused) video.play();
+
+        video.addEventListener('mousedown', function(e) {
+            if (e.button === 1) {
+                e.preventDefault();
+                return false;
+            }
+        });
+
+        video.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+        });
+
+        video.addEventListener('ended', function () {
+            if (video.hasAttribute('loop')) { 
+                video.currentTime = 0;
+                video.play();
+            }
+        }); 
+
+        video.addEventListener('seeking', function () {
+            if (!video.paused) video.play();
+        });
+    } 
+
+    function syncAllVideos() {
+        const videos = document.querySelectorAll('video:not(.video-left):not(.video-right)');
+        videos.forEach(v => {
+            try {
+                v.currentTime = 0;
+                v.play();
+            } catch (e) { }
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('video').forEach(enforceAutoplayLoop);
+        syncAllVideos();
+    });
+
+    // Observe for dynamically added/replaced videos
+    const observer = new MutationObserver(() => {
+        document.querySelectorAll('video').forEach(enforceAutoplayLoop);
+        syncAllVideos();
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    // Video comparison slider
+    function initVideoCompareSlider(container) {
+        var videoRight = container.querySelector('.video-right');
+        var slider = container.querySelector('.video-compare-slider');
+        var labelLeft = container.querySelector('.video-compare-label.left');
+        var labelRight = container.querySelector('.video-compare-label.right');
+
+        function updatePosition(clientX) {
+            var rect = container.getBoundingClientRect();
+            var pos = (clientX - rect.left) / rect.width;
+            pos = Math.max(0.02, Math.min(0.98, pos));
+            videoRight.style.clipPath = 'inset(0 0 0 ' + (pos * 100) + '%)';
+            slider.style.left = (pos * 100) + '%';
+            if (labelLeft) labelLeft.style.opacity = pos < 0.15 ? '0' : '1';
+            if (labelRight) labelRight.style.opacity = pos > 0.85 ? '0' : '1';
+        }
+
+        container.addEventListener('mousemove', function(e) {
+            updatePosition(e.clientX);
+        });
+
+        container.addEventListener('touchstart', function(e) {
+            updatePosition(e.touches[0].clientX);
+            e.preventDefault();
+        }, { passive: false });
+        container.addEventListener('touchmove', function(e) {
+            updatePosition(e.touches[0].clientX);
+            e.preventDefault();
+        }, { passive: false });
+    }
+
+    function syncCompareVideos(container) {
+        var left = container.querySelector('.video-left');
+        var right = container.querySelector('.video-right');
+        if (!left || !right) return;
+        left.currentTime = 0;
+        right.currentTime = 0;
+        left.play();
+        right.play();
+        left.addEventListener('timeupdate', function() {
+            if (Math.abs(left.currentTime - right.currentTime) > 0.15) {
+                right.currentTime = left.currentTime;
+            }
+            if (left.duration && left.currentTime >= left.duration - 0.5) {
+                left.currentTime = 0;
+                right.currentTime = 0;
+                left.play();
+                right.play();
+            }
+        });
+        right.addEventListener('timeupdate', function() {
+            if (right.duration && right.currentTime >= right.duration - 0.5) {
+                left.currentTime = 0;
+                right.currentTime = 0;
+                left.play();
+                right.play();
+            }
+        });
+    }
+
+    // Baseline comparison functionality
+    function initBaselineComparison() {
+        const groups = document.querySelectorAll('.baseline-group');
+
+        groups.forEach(group => {
+            const buttons = group.querySelectorAll('.baseline-btn, .category-btn');
+            const items = group.querySelectorAll('.baseline-item');
+
+            buttons.forEach(button => {
+                button.addEventListener('click', function () {
+                    const targetBaseline = this.getAttribute('data-baseline');
+
+                    buttons.forEach(btn => btn.classList.remove('active'));
+                    items.forEach(item => {
+                        item.classList.remove('active');
+                        item.querySelectorAll('video').forEach(v => v.pause());
+                    });
+
+                    this.classList.add('active');
+                    const targetItem = document.getElementById(targetBaseline);
+                    if (targetItem) {
+                        targetItem.classList.add('active');
+                        var compareContainer = targetItem.querySelector('.video-compare-container');
+                        if (compareContainer) {
+                            syncCompareVideos(compareContainer);
+                        } else {
+                            setTimeout(() => { syncAllVideos(); }, 100);
+                        }
+                    }
+                });
+            });
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        initBaselineComparison();
+
+        // Initialize all video comparison sliders
+        document.querySelectorAll('.video-compare-container').forEach(function(container) {
+            initVideoCompareSlider(container);
+        });
+        // Sync default active scene
+        var activeContainer = document.querySelector('.baseline-item.active .video-compare-container');
+        if (activeContainer) syncCompareVideos(activeContainer);
+        // Pause videos in inactive scenes
+        document.querySelectorAll('.baseline-item:not(.active) video').forEach(function(v) { v.pause(); });
+
+        // Qualitative visualization thumbnail gallery
+        var qualThumbs = document.querySelectorAll('.qual-thumb');
+        var qualMainImg = document.getElementById('qual-main-img');
+        for (var i = 0; i < qualThumbs.length; i++) {
+            (function(thumb) {
+                thumb.addEventListener('click', function () {
+                    for (var j = 0; j < qualThumbs.length; j++) {
+                        qualThumbs[j].classList.remove('active');
+                        qualThumbs[j].style.transform = 'scale(1)';
+                        qualThumbs[j].style.borderColor = 'transparent';
+                    }
+                    thumb.classList.add('active');
+                    thumb.style.transform = 'scale(1.08)';
+                    thumb.style.borderColor = '#5bc0eb';
+                    qualMainImg.style.opacity = '0';
+                    setTimeout(function() {
+                        qualMainImg.src = thumb.getAttribute('data-img');
+                        qualMainImg.style.opacity = '1';
+                    }, 150);
+                });
+            })(qualThumbs[i]);
+        }
+    });
+</script>
+
+</body>
+
+</html>
